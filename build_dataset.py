@@ -7,6 +7,7 @@ from sys import platform
 import argparse
 import time
 import numpy as np
+import csv
 
 try:
     # Import Openpose (Windows/Ubuntu/OSX)
@@ -58,6 +59,8 @@ try:
     frame_rate = 5
     prev = 0
 
+    kp_list = []
+    i = 0
     while(True):
         # Limit framerate
         time_elapsed = time.time() - prev
@@ -75,12 +78,32 @@ try:
             if kp.shape: # If 0 people in image, shape doesn't exist
                 kp = kp[0][1:9] # Extract upper body indices
                 kp = np.delete(kp, 2, 1) # Drop confidence score
+                kp = kp.flatten()
 
-            print("keypoints:\n", kp)
+                valid = True
+                for j in range(len(kp)): # don't take if missing a keypoint
+                    if int(kp[j]) == 0:
+                        valid = False
+                        break
+                if valid:
+                    if i >= 20: # arbitrary delay to get into the right position
+                        kp_list.append(kp)
+                    i += 1
             
+            print(i)
+
+            if i >= 520: # 500 images per set
+                break
 
             cv2.imshow("OpenPose 1.6.0 - Chad API", kp_overlay)
             cv2.waitKey(1)
+
+    pose = "turnright"
+    with open(f'data/{pose}.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=' ', quotechar='|')
+        for row in kp_list:
+            writer.writerow(row)
+
 
 except Exception as e:
     print(e)
