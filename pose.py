@@ -7,6 +7,8 @@ from sys import platform
 import argparse
 import time
 import numpy as np
+from sklearn.neural_network import MLPClassifier
+from joblib import dump, load
 
 try:
     # Import Openpose (Windows/Ubuntu/OSX)
@@ -51,7 +53,10 @@ try:
     opWrapper.configure(params)
     opWrapper.start()
 
-    # Process Image
+    # Import classification model
+    mlp = load('model.joblib')
+
+    # Set up camera processing
     datum = op.Datum()
     stream = cv2.VideoCapture(0)
 
@@ -69,15 +74,22 @@ try:
             datum.cvInputData = image
             opWrapper.emplaceAndPop([datum])
 
+            pose = ""
+
             # Extract keypoints
             kp = datum.poseKeypoints
             kp_overlay = datum.cvOutputData
             if kp.shape: # If 0 people in image, shape doesn't exist
                 kp = kp[0][1:9] # Extract upper body indices
                 kp = np.delete(kp, 2, 1) # Drop confidence score
-
-            print("keypoints:\n", kp)
+                kp = kp.flatten()
+                kp = kp.reshape(1, -1)
             
+                pose = mlp.predict(kp)[0]
+            else:
+                pose = "neutral"
+
+            print(pose)
 
             cv2.imshow("OpenPose 1.6.0 - Chad API", kp_overlay)
             cv2.waitKey(1)
