@@ -9,7 +9,105 @@ import time
 import numpy as np
 from sklearn.neural_network import MLPClassifier
 from joblib import dump, load
+import rospy 
+from mavros_msgs.srv import SetMode, CommandBool, CommandTOL
+from geometry_msgs.msg import TwistStamped, Vector3
 
+
+# ================ ROS Setup ========================
+rospy.init_node('mavros_final_project')
+rate = rospy.Rate(10)
+
+commandVelocityPub = rospy.Publisher('/mavros/setpoint_velocity/cmd_vel', TwistStamped, queue_size = 10)
+setVelocity = TwistStamped()
+
+def setMode():
+    print("Setting Mode to Guided: mode guided")
+    rospy.wait_for_service('/mavros/set_mode')
+    try: 
+        mavSetMode = rospy.ServiceProxy('/mavros/set_mode', SetMode)
+        mavSetMode(custom_mode="Guided")
+    except rospy.ServiceException as e:
+        print(e)
+
+def armCopter():
+    print("Arming throttle: arm throttle")
+    rospy.wait_for_service('/mavros/cmd/arming')
+    try:
+        mavArm = rospy.ServiceProxy('/mavros/cmd/arming', CommandBool)
+        mavArm(value = True)
+    except rospy.ServiceException as e:
+        print(e)
+
+def takeOff():
+    print("Taking off: takeoff 1")
+    try:
+        mavTakeOff = rospy.ServiceProxy('/mavros/cmd/takeoff', CommandTOL)
+        mavTakeOff(altitude=1)
+    except rospy.ServiceException as e:
+        print(e)
+
+def land():
+    print("Landing: mode land")
+    try:
+        mavLand = rospy.ServiceProxy('/mavros/cmd/land', CommandTOL)
+        mavLand(altitude=1)
+    except rospy.ServiceException as e:
+        print(e)
+
+def disarmCopter():
+    print("Disarming throttle: disarm")
+    try:
+        mavDisarm = rospy.ServiceProxy('/mavros/cmd/arming', CommandBool)
+        mavDisarm(value = False)
+    except rospy.ServiceException as e:
+        print(e)
+
+
+# ================ Classification setup ========================
+def forward():
+    setVelocity.twist.linear.y = 0.5
+
+def back():
+    setVelocity.twist.linear.y = -0.5
+
+def right():
+    print("yo")
+    setVelocity.twist.linear.x = 0.5
+    print(setVelocity)
+
+def left():
+    setVelocity.twist.linear.x = -0.5
+
+def down():
+    setVelocity.twist.linear.z = -0.5
+
+def up():
+    setVelocity.twist.linear.z = 0.5
+
+def turnleft():
+    setVelocity.twist.angular.z = 0.5
+
+def turnright():
+    setVelocity.twist.angular.z = -0.5
+
+def neutral():
+    pass
+
+ops = {
+    "forward": forward(),
+    "back": back(),
+    "right": right(),
+    "left": left(),
+    "down": down(),
+    "up": up(),
+    "turnleft": turnleft(),
+    "turnright": turnright(),
+    "neutral": neutral()
+}
+
+
+# ================ OpenPose ========================
 try:
     # Import Openpose (Windows/Ubuntu/OSX)
     dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -60,8 +158,13 @@ try:
     datum = op.Datum()
     stream = cv2.VideoCapture(0)
 
-    frame_rate = 5
+    frame_rate = 2
     prev = 0
+
+    setMode()
+    armCopter()
+    takeOff()
+    time.sleep(5)
 
     while(True):
         # Limit framerate
@@ -70,6 +173,9 @@ try:
 
         if time_elapsed > 1./frame_rate:
             prev = time.time()
+
+            setVelocity.twist.linear = Vector3(x = 0, y = 0, z = 0)
+            setVelocity.twist.angular = Vector3(x = 0, y = 0, z = 0)
 
             datum.cvInputData = image
             opWrapper.emplaceAndPop([datum])
@@ -90,9 +196,19 @@ try:
                 pose = "neutral"
 
             print(pose)
+            ops[pose]
+            print(setVelocity)
+            commandVelocityPub.publish(setVelocity)
 
             cv2.imshow("OpenPose 1.6.0 - Chad API", kp_overlay)
-            cv2.waitKey(1)
+            if cv2.waitKey(1) == ord('q'):
+                stream.release()
+                cv2.destroyAllWindows()
+                break
+    
+    land()
+    disarmCopter()
+    time.sleep(5)
 
 except Exception as e:
     print(e)
