@@ -65,19 +65,17 @@ def disarmCopter():
 
 
 # ================ Classification setup ========================
-def forward():
-    setVelocity.twist.linear.y = 0.5
-
-def back():
-    setVelocity.twist.linear.y = -0.5
-
 def right():
-    print("yo")
-    setVelocity.twist.linear.x = 0.5
-    print(setVelocity)
+    setVelocity.twist.linear.y = -1
 
 def left():
-    setVelocity.twist.linear.x = -0.5
+    setVelocity.twist.linear.y = 1
+
+def forward():
+    setVelocity.twist.linear.x = 1
+
+def back():
+    setVelocity.twist.linear.x = 1
 
 def down():
     setVelocity.twist.linear.z = -0.5
@@ -95,15 +93,15 @@ def neutral():
     pass
 
 ops = {
-    "forward": forward(),
-    "back": back(),
-    "right": right(),
-    "left": left(),
-    "down": down(),
-    "up": up(),
-    "turnleft": turnleft(),
-    "turnright": turnright(),
-    "neutral": neutral()
+    "right": right,
+    "left": left,
+    "forward": forward,
+    "back": back,
+    "down": down,
+    "up": up,
+    "turnleft": turnleft,
+    "turnright": turnright,
+    "neutral": neutral
 }
 
 
@@ -158,7 +156,7 @@ try:
     datum = op.Datum()
     stream = cv2.VideoCapture(0)
 
-    frame_rate = 2
+    frame_rate = 3
     prev = 0
 
     setMode()
@@ -195,9 +193,7 @@ try:
             else:
                 pose = "neutral"
 
-            print(pose)
-            ops[pose]
-            print(setVelocity)
+            ops[pose]()
             commandVelocityPub.publish(setVelocity)
 
             cv2.imshow("OpenPose 1.6.0 - Chad API", kp_overlay)
