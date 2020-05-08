@@ -13,7 +13,7 @@ To launch, run the following commands in separate terminals:
 
 ```bash
 sim_vehicle.py -v ArduCopter -f gazebo-iris --map --console
-gazebo --verbose worlds/iris_arducopter_runway.world
+gazebo --verbose obstacle.world
 roslaunch mavros apm.launch
 python3 pose.py
 ```
