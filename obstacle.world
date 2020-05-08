@@ -1,6 +1,6 @@
 <sdf version='1.6'>
   <world name='default'>
-    <gui fullscreen='1'>
+    <gui fullscreen='0'>
       <camera name="user_camera">
         <track_visual>
           <name>iris_demo</name>

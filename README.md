@@ -1,6 +1,12 @@
 # openpose-drone-control
 Drone control scheme using OpenPose and neural net classification. 
 
+
+
+![controller demo](media/demo.gif)
+
+
+
 ## Setup
 
 1. Install OpenPose.
