@@ -75,7 +75,7 @@ def forward():
     setVelocity.twist.linear.x = 1
 
 def back():
-    setVelocity.twist.linear.x = 1
+    setVelocity.twist.linear.x = -1
 
 def down():
     setVelocity.twist.linear.z = -0.5
